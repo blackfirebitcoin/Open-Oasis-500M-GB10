@@ -67,7 +67,7 @@ Most rows below link to a representative clip in the [video gallery](https://raw
 | Camera input shaping ("safe-camera") | period=12, max=18px, pitch=0 | None — the visual feels smoother but the scene still crystallizes | [`safe-camera-fwd-sway-120.mp4`](https://cdn.jsdelivr.net/gh/blackfirebitcoin/Open-Oasis-500M-GB10@dgx-spark-gb10/benchmarks/renders/safe-camera-fwd-sway-120.mp4) |
 | Multi-frame video prompt | n=4, 8 | None | (in `live_server.py` flags) |
 | Real MineRL action prefill | n=4, 8 | None | (in `live_server.py` flags) |
-| Periodic VAE re-encode | period ∈ {4, 8, 12, 16} | None | Not highlighted |
+| Periodic VAE re-encode | period ∈ {4, 8, 12, 16} | None | — |
 | Input ablation | W-only, mouse-only, step-input, sparse-yaw | None | [`ablate-walk-only.mp4`](https://cdn.jsdelivr.net/gh/blackfirebitcoin/Open-Oasis-500M-GB10@dgx-spark-gb10/benchmarks/renders/ablate-walk-only.mp4) |
 
 CLI flags for every one of these are still present in `live_server.py` so the experiments are reproducible.
