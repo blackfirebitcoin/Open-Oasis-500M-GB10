@@ -18,7 +18,7 @@ GitHub README markdown strips raw HTML5 `<video>` tags, so the directly viewable
 - [Gallery source in this repo](docs/video-gallery.html).
 - [Direct MP4 directory](https://github.com/blackfirebitcoin/Open-Oasis-500M-GB10/tree/dgx-spark-gb10/benchmarks/renders) — browse and download individual clips.
 
-The 14 clips trace: the headline starburst crystallization, the baseline live config (with and without input), the full sampler / window / prompt / context-noise mitigation sweep, the dynamic age-weighted noise sweep, camera shaping, input ablation, the rejected VAE-reencode false positive, and an offline-rendered reference.
+The 13 clips trace: the headline starburst crystallization, the strongest live-run result, the strongest offline reference, the baseline live config (with and without input), the sampler / window / prompt / context-noise mitigation sweep, dynamic age-weighted noise, camera shaping, and input ablation.
 
 ## Best results I got
 
@@ -54,7 +54,7 @@ The "minutes of gameplay" claims in press coverage refer to Etched's larger **un
 
 ## What I tried (and what didn't help)
 
-Every row below has at least one corresponding clip in the [video gallery](https://raw.githack.com/blackfirebitcoin/Open-Oasis-500M-GB10/dgx-spark-gb10/docs/video-gallery.html).
+Most rows below link to a representative clip in the [video gallery](https://raw.githack.com/blackfirebitcoin/Open-Oasis-500M-GB10/dgx-spark-gb10/docs/video-gallery.html).
 
 | Lever | Configs swept | Effect on crystallization | Representative clip |
 | --- | --- | --- | --- |
@@ -67,29 +67,11 @@ Every row below has at least one corresponding clip in the [video gallery](https
 | Camera input shaping ("safe-camera") | period=12, max=18px, pitch=0 | None — the visual feels smoother but the scene still crystallizes | [`safe-camera-fwd-sway-120.mp4`](https://cdn.jsdelivr.net/gh/blackfirebitcoin/Open-Oasis-500M-GB10@dgx-spark-gb10/benchmarks/renders/safe-camera-fwd-sway-120.mp4) |
 | Multi-frame video prompt | n=4, 8 | None | (in `live_server.py` flags) |
 | Real MineRL action prefill | n=4, 8 | None | (in `live_server.py` flags) |
-| Periodic VAE re-encode | period ∈ {4, 8, 12, 16} | **None — see methodological note below** | [`rejected-vae-reencode-period4.mp4`](https://cdn.jsdelivr.net/gh/blackfirebitcoin/Open-Oasis-500M-GB10@dgx-spark-gb10/benchmarks/renders/rejected-vae-reencode-period4.mp4) |
+| Periodic VAE re-encode | period ∈ {4, 8, 12, 16} | None | Not highlighted |
 | Input ablation | W-only, mouse-only, step-input, sparse-yaw | None | [`ablate-walk-only.mp4`](https://cdn.jsdelivr.net/gh/blackfirebitcoin/Open-Oasis-500M-GB10@dgx-spark-gb10/benchmarks/renders/ablate-walk-only.mp4) |
 
 CLI flags for every one of these are still present in `live_server.py` so the experiments are reproducible.
 
-## Methodological note: pixel metrics lied to me
-
-Mid-investigation I had Hu-moment / inter-frame pixel-change scoring telling me VAE re-encode at period 4 was a clear win. Visually it absolutely was not — the VAE re-encode loop adds high-frequency flicker that registers as "dynamism" in pixel-difference metrics, but the underlying scene was the same crystallized fixed point with extra noise on top. I almost shipped this as a "win" until I sat down and actually watched the output.
-
-The `rejected-vae-reencode-period4.mp4` clip in the gallery is on file specifically as the canonical example of this — open it next to `baseline-ddim4-w16.mp4` and the difference is "same scene, plus shimmer."
-
-The lesson I'm leaving here for anyone evaluating this class of model: **for live world models, the meaningful signal is "does an experienced player feel this is responding?" — not "do consecutive frames differ in pixel space?"**
-
-## Comparison to Dreamerv4-MC on the same GPU
-
-I ported [Dreamerv4-MC](https://github.com/IamCreateAI/Dreamerv4-MC) to GB10 in parallel — see [Dreamerv4-MC-GB10](https://github.com/blackfirebitcoin/Dreamerv4-MC-GB10). On the same hardware, with the public released weights for both:
-
-| Model | Live FPS | Memory window | Subjective playability |
-| --- | --- | --- | --- |
-| Open Oasis 500M | ~2 FPS @ ddim=4, win=16 | 16 frames live (~0.8s), 32 architectural max (~1.6s) | crystallizes within ~2s, does not recover |
-| Dreamerv4-MC | ~3 FPS @ steps_size=4 | 256-frame KV cache (~85s) | several minutes of stable play, world persistence |
-
-Both are slow on GB10 — neither is "real-time" in the way Etched's hosted demos are — so this is purely a coherence comparison. The takeaway I land on: for live single-GPU world-model serving on what's actually downloadable today, a long KV cache of cheap autoregressive frames materially outperforms a short sliding-window diffusion-forcing model, even though the diffusion-forcing model is architecturally cheaper per frame.
 
 ## What is actually in this fork
 
@@ -100,7 +82,7 @@ Both are slow on GB10 — neither is "real-time" in the way Etched's hosted demo
 | `static/index.html` | new | Minimal browser UI for live play and status. |
 | `static/seeds/` | new | Seed images used by the live server and gallery (savanna, crickle, portal, boat, starburst, etc.). |
 | `dit.py`, `vae.py`, `attention.py`, `rotary_embedding_torch.py`, `generate.py` | unmodified | Carried as-is from upstream. |
-| `benchmarks/renders/` | new | 14 MP4 clips from the sweep. Inline-playable through `docs/video-gallery.html`. |
+| `benchmarks/renders/` | new | 13 MP4 clips from the sweep. Inline-playable through `docs/video-gallery.html`. |
 | `docs/video-gallery.html` | new | Embedded video gallery (dark theme, hover-to-preview seeds). |
 | `docs/UPSTREAM-README.md` | preserved | Original Etched / Decart README. |
 | `docs/results/` | new | Best-result still images shown in the README above. |
