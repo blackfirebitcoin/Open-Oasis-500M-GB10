@@ -10,6 +10,16 @@ I'm publishing this as a **negative-result writeup**: I tried to make the public
 
 For a playable Minecraft world model on the same GPU, see my other fork: [Dreamerv4-MC-GB10](https://github.com/blackfirebitcoin/Dreamerv4-MC-GB10).
 
+## Embedded video gallery
+
+GitHub README markdown strips raw HTML5 `<video>` tags, so the directly viewable embedded gallery lives in a checked-in HTML page:
+
+- **[Open the embedded video gallery](https://raw.githack.com/blackfirebitcoin/Open-Oasis-500M-GB10/dgx-spark-gb10/docs/video-gallery.html)** — RawGitHack-rendered, no setup required. Dark theme, hover the green `seed` badge on any clip to preview the start frame it was rendered from.
+- [Gallery source in this repo](docs/video-gallery.html).
+- [Direct MP4 directory](https://github.com/blackfirebitcoin/Open-Oasis-500M-GB10/tree/dgx-spark-gb10/benchmarks/renders) — browse and download individual clips.
+
+The 14 clips trace: the headline starburst crystallization, the baseline live config (with and without input), the full sampler / window / prompt / context-noise mitigation sweep, the dynamic age-weighted noise sweep, camera shaping, input ablation, the rejected VAE-reencode false positive, and an offline-rendered reference.
+
 ## Best results I got
 
 These are the most coherent frames I got out of my own live-play sessions. They look like real Minecraft for one or two seconds, then collapse.
@@ -18,7 +28,7 @@ These are the most coherent frames I got out of my own live-play sessions. They 
 | --- | --- |
 | ![best-1](docs/results/best-savanna.png) | ![best-2](docs/results/best-portal.png) |
 
-Both of these are the *opening* of a session. After roughly 30–60 frames everything becomes a soft blur and stops responding to input.
+Both of these are the *opening* of a session. After roughly 30–60 frames everything becomes a soft blur and stops responding to input. Watch [`baseline-ddim4-w16.mp4`](https://cdn.jsdelivr.net/gh/blackfirebitcoin/Open-Oasis-500M-GB10@dgx-spark-gb10/benchmarks/renders/baseline-ddim4-w16.mp4) (with input) or [`baseline-noinput.mp4`](https://cdn.jsdelivr.net/gh/blackfirebitcoin/Open-Oasis-500M-GB10@dgx-spark-gb10/benchmarks/renders/baseline-noinput.mp4) (no input — proves crystallization is independent of input) for the live animation.
 
 ## What crystallization actually looks like
 
@@ -27,6 +37,8 @@ The single clearest demonstration I have of the architectural ceiling is what ha
 This is a starburst optical-illusion image, fed to the live server with normal WASD + mouse input:
 
 ![starburst-crystallization](docs/results/starburst-seed.png)
+
+**Watch the live animation:** [`starburst-crystallization.mp4`](https://cdn.jsdelivr.net/gh/blackfirebitcoin/Open-Oasis-500M-GB10@dgx-spark-gb10/benchmarks/renders/starburst-crystallization.mp4) (or [open it inside the gallery, with hover-to-preview seed](https://raw.githack.com/blackfirebitcoin/Open-Oasis-500M-GB10/dgx-spark-gb10/docs/video-gallery.html#starburst-crystallization.mp4)).
 
 The model never resolves the starburst into anything chaotic-but-Minecraft-shaped. It just locks. Even a totally out-of-distribution seed cannot knock it off its fixed point — that's the cleanest way I can describe what "crystallization" means here.
 
@@ -42,25 +54,29 @@ The "minutes of gameplay" claims in press coverage refer to Etched's larger **un
 
 ## What I tried (and what didn't help)
 
-| Lever | Configs swept | Effect on crystallization |
-| --- | --- | --- |
-| DDIM steps | 1, 2, 4, 8 | None (slows FPS, ceiling unchanged) |
-| Context window | 16, 32 | None (32 is the architectural max for 500M) |
-| Stabilization level | 5, 15, 30 | None |
-| Pin first prompt frame | on / off | None |
-| Constant context-noise injection | on / off | None |
-| Dynamic age-weighted noise | `max ∈ {15, 50, 100, 200}` × `age_weight ∈ {0, 0.5, 0.7}` | None |
-| Camera input shaping ("safe-camera") | period=12, max=18px, pitch=0 | None — the visual feels smoother but the scene still crystallizes |
-| Multi-frame video prompt | n=4, 8 | None |
-| Real MineRL action prefill | n=4, 8 | None |
-| Periodic VAE re-encode | period ∈ {4, 8, 12, 16} | **None — see methodological note below** |
-| Input ablation | W-only, mouse-only, step-input, sparse-yaw | None |
+Every row below has at least one corresponding clip in the [video gallery](https://raw.githack.com/blackfirebitcoin/Open-Oasis-500M-GB10/dgx-spark-gb10/docs/video-gallery.html).
+
+| Lever | Configs swept | Effect on crystallization | Representative clip |
+| --- | --- | --- | --- |
+| DDIM steps | 1, 2, 4, 8 | None (slows FPS, ceiling unchanged) | [`mitigation-ddim8.mp4`](https://cdn.jsdelivr.net/gh/blackfirebitcoin/Open-Oasis-500M-GB10@dgx-spark-gb10/benchmarks/renders/mitigation-ddim8.mp4) |
+| Context window | 16, 32 | None (32 is the architectural max for 500M) | [`mitigation-window32.mp4`](https://cdn.jsdelivr.net/gh/blackfirebitcoin/Open-Oasis-500M-GB10@dgx-spark-gb10/benchmarks/renders/mitigation-window32.mp4) |
+| Stabilization level | 5, 15, 30 | None | [`mitigation-stabilization30.mp4`](https://cdn.jsdelivr.net/gh/blackfirebitcoin/Open-Oasis-500M-GB10@dgx-spark-gb10/benchmarks/renders/mitigation-stabilization30.mp4) |
+| Pin first prompt frame | on / off | None | [`mitigation-pin-prompt.mp4`](https://cdn.jsdelivr.net/gh/blackfirebitcoin/Open-Oasis-500M-GB10@dgx-spark-gb10/benchmarks/renders/mitigation-pin-prompt.mp4) |
+| Constant context-noise injection | on / off | None | [`mitigation-context-noise.mp4`](https://cdn.jsdelivr.net/gh/blackfirebitcoin/Open-Oasis-500M-GB10@dgx-spark-gb10/benchmarks/renders/mitigation-context-noise.mp4) |
+| Dynamic age-weighted noise | `max ∈ {15, 50, 100, 200}` × `age_weight ∈ {0, 0.5, 0.7}` | None | [`dynamic-noising-best-move.mp4`](https://cdn.jsdelivr.net/gh/blackfirebitcoin/Open-Oasis-500M-GB10@dgx-spark-gb10/benchmarks/renders/dynamic-noising-best-move.mp4) |
+| Camera input shaping ("safe-camera") | period=12, max=18px, pitch=0 | None — the visual feels smoother but the scene still crystallizes | [`safe-camera-fwd-sway-120.mp4`](https://cdn.jsdelivr.net/gh/blackfirebitcoin/Open-Oasis-500M-GB10@dgx-spark-gb10/benchmarks/renders/safe-camera-fwd-sway-120.mp4) |
+| Multi-frame video prompt | n=4, 8 | None | (in `live_server.py` flags) |
+| Real MineRL action prefill | n=4, 8 | None | (in `live_server.py` flags) |
+| Periodic VAE re-encode | period ∈ {4, 8, 12, 16} | **None — see methodological note below** | [`rejected-vae-reencode-period4.mp4`](https://cdn.jsdelivr.net/gh/blackfirebitcoin/Open-Oasis-500M-GB10@dgx-spark-gb10/benchmarks/renders/rejected-vae-reencode-period4.mp4) |
+| Input ablation | W-only, mouse-only, step-input, sparse-yaw | None | [`ablate-walk-only.mp4`](https://cdn.jsdelivr.net/gh/blackfirebitcoin/Open-Oasis-500M-GB10@dgx-spark-gb10/benchmarks/renders/ablate-walk-only.mp4) |
 
 CLI flags for every one of these are still present in `live_server.py` so the experiments are reproducible.
 
 ## Methodological note: pixel metrics lied to me
 
 Mid-investigation I had Hu-moment / inter-frame pixel-change scoring telling me VAE re-encode at period 4 was a clear win. Visually it absolutely was not — the VAE re-encode loop adds high-frequency flicker that registers as "dynamism" in pixel-difference metrics, but the underlying scene was the same crystallized fixed point with extra noise on top. I almost shipped this as a "win" until I sat down and actually watched the output.
+
+The `rejected-vae-reencode-period4.mp4` clip in the gallery is on file specifically as the canonical example of this — open it next to `baseline-ddim4-w16.mp4` and the difference is "same scene, plus shimmer."
 
 The lesson I'm leaving here for anyone evaluating this class of model: **for live world models, the meaningful signal is "does an experienced player feel this is responding?" — not "do consecutive frames differ in pixel space?"**
 
@@ -82,9 +98,12 @@ Both are slow on GB10 — neither is "real-time" in the way Etched's hosted demo
 | `live_server.py` | new | FastAPI / WebSocket server with all experimental CLI flags from the sweep. Defaults are the baseline. |
 | `utils.py` | upstream bug fix | `torchvision.io.read_video` returns THWC; upstream `load_prompt` was treating it as TCHW and silently producing a one-frame prompt. |
 | `static/index.html` | new | Minimal browser UI for live play and status. |
+| `static/seeds/` | new | Seed images used by the live server and gallery (savanna, crickle, portal, boat, starburst, etc.). |
 | `dit.py`, `vae.py`, `attention.py`, `rotary_embedding_torch.py`, `generate.py` | unmodified | Carried as-is from upstream. |
+| `benchmarks/renders/` | new | 14 MP4 clips from the sweep. Inline-playable through `docs/video-gallery.html`. |
+| `docs/video-gallery.html` | new | Embedded video gallery (dark theme, hover-to-preview seeds). |
 | `docs/UPSTREAM-README.md` | preserved | Original Etched / Decart README. |
-| `docs/results/` | new | The three images shown above. |
+| `docs/results/` | new | Best-result still images shown in the README above. |
 
 ## Setup on GB10
 
