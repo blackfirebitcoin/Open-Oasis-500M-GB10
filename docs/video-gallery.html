@@ -17,7 +17,6 @@
     a { color: var(--link); }
     .lede, .filename { color: var(--muted); }
     .clip { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin: 18px 0; box-shadow: 0 8px 24px rgba(0,0,0,.18); overflow: visible; }
-    .clip.headline { border: 1px solid rgba(240, 136, 62, .55); box-shadow: 0 8px 24px rgba(240, 136, 62, .15); }
     video { display: block; width: min(100%, 640px); height: auto; margin: 14px 0; border-radius: 10px; border: 1px solid var(--border); background: #000; }
     nav { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 8px; }
     nav a { border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px; text-decoration: none; color: var(--text); background: rgba(88,166,255,.08); }
@@ -49,11 +48,6 @@
       color: var(--muted);
       background: rgba(110, 118, 129, .15);
       border-color: rgba(110, 118, 129, .35);
-    }
-    .seed-badge-headline {
-      color: var(--warn);
-      background: rgba(240, 136, 62, .12);
-      border-color: rgba(240, 136, 62, .35);
     }
     .seed-preview {
       position: absolute;
@@ -102,7 +96,7 @@
   <main>
     <header>
       <h1>Open Oasis 500M GB10 benchmark video gallery</h1>
-      <p class="lede">Inline HTML5 previews for the MP4 benchmark clips tracked in <code>benchmarks/renders/</code> on the <code>dgx-spark-gb10</code> branch. Hover the green <span class="seed-badge">seed</span> badge (or the dotted title) to preview the start frame each clip was rendered from. The <span class="seed-badge seed-badge-headline">headline</span> clip is the lead crystallization exhibit.</p>
+      <p class="lede">Inline HTML5 previews for the MP4 benchmark clips tracked in <code>benchmarks/renders/</code> on the <code>dgx-spark-gb10</code> branch. Hover the green <span class="seed-badge">seed</span> badge (or the dotted title) to preview the start frame each clip was rendered from.</p>
       <p><a href="https://github.com/blackfirebitcoin/Open-Oasis-500M-GB10">Back to repository</a> &middot; <a href="https://github.com/blackfirebitcoin/Open-Oasis-500M-GB10/blob/dgx-spark-gb10/README.md">Negative-result writeup</a></p>
     </header>
     <nav aria-label="Clip list">
@@ -123,7 +117,7 @@
 
 
 
-      <h3>Primary requested clips</h3>
+      <h3>Best coherent runs</h3>
       <article class="clip" id="dynamic-noising-best-move.mp4">
         <h2><span class="title-hover" tabindex="0" aria-label="Dynamic noising, best config (max=200, age_weight=0.7), with movement (hover or focus to preview seed image imgs_0.png)">Dynamic noising, best config (max=200, aw=0.7) <span class="seed-badge" aria-hidden="true">seed</span> <span class="seed-preview" role="tooltip"><img src="https://cdn.jsdelivr.net/gh/blackfirebitcoin/Open-Oasis-500M-GB10@dgx-spark-gb10/static/seeds/imgs_0.png" alt="Seed image for this clip: imgs_0.png" loading="lazy" width="320"><span class="seed-caption">Seed image: <code>imgs_0.png</code></span></span></span></h2>
         <p class="filename">dynamic-noising-best-move.mp4</p>
@@ -140,18 +134,17 @@
         <p><a href="https://cdn.jsdelivr.net/gh/blackfirebitcoin/Open-Oasis-500M-GB10@dgx-spark-gb10/benchmarks/renders/offline-ddim8-w32-forward-sway.mp4">Open MP4 directly</a> &middot; <a href="https://github.com/blackfirebitcoin/Open-Oasis-500M-GB10/blob/dgx-spark-gb10/benchmarks/renders/offline-ddim8-w32-forward-sway.mp4">View file in repo</a></p>
       </article>
 
-      <h3>Additional coherent live run</h3>
       <article class="clip" id="dynamic-noising-baseline-move.mp4">
         <h2><span class="title-hover" tabindex="0" aria-label="Second-best live result: moving baseline (hover or focus to preview seed image imgs_0.png)">Second-best live result: moving baseline <span class="seed-badge" aria-hidden="true">seed</span> <span class="seed-preview" role="tooltip"><img src="https://cdn.jsdelivr.net/gh/blackfirebitcoin/Open-Oasis-500M-GB10@dgx-spark-gb10/static/seeds/imgs_0.png" alt="Seed image for this clip: imgs_0.png" loading="lazy" width="320"><span class="seed-caption">Seed image: <code>imgs_0.png</code></span></span></span></h2>
         <p class="filename">dynamic-noising-baseline-move.mp4</p>
         <video controls muted playsinline preload="metadata" width="640" src="https://cdn.jsdelivr.net/gh/blackfirebitcoin/Open-Oasis-500M-GB10@dgx-spark-gb10/benchmarks/renders/dynamic-noising-baseline-move.mp4"></video>
-        <p>A plain moving baseline with the same scripted walking input later used for dynamic-noising comparisons. Second-most coherent of the live runs after the headline starburst case.</p>
+        <p>A plain moving baseline with the same scripted walking input later used for dynamic-noising comparisons. A representative live run; included as one of the more coherent live captures alongside the dynamic-noising configurations.</p>
         <p><a href="https://cdn.jsdelivr.net/gh/blackfirebitcoin/Open-Oasis-500M-GB10@dgx-spark-gb10/benchmarks/renders/dynamic-noising-baseline-move.mp4">Open MP4 directly</a> &middot; <a href="https://github.com/blackfirebitcoin/Open-Oasis-500M-GB10/blob/dgx-spark-gb10/benchmarks/renders/dynamic-noising-baseline-move.mp4">View file in repo</a></p>
       </article>
 
       <h3>Crystallization exhibit</h3>
-      <article class="clip headline" id="starburst-crystallization.mp4">
-        <h2><span class="title-hover" tabindex="0" aria-label="Starburst crystallization, lead exhibit (hover or focus to preview seed image starburst.png)">Starburst crystallization, lead exhibit <span class="seed-badge seed-badge-headline" aria-hidden="true">headline</span> <span class="seed-preview" role="tooltip"><img src="https://cdn.jsdelivr.net/gh/blackfirebitcoin/Open-Oasis-500M-GB10@dgx-spark-gb10/static/seeds/starburst.png" alt="Seed image for this clip: starburst.png" loading="lazy" width="320"><span class="seed-caption">Seed image: <code>starburst.png</code> (a non-Minecraft optical-illusion image)</span></span></span></h2>
+      <article class="clip" id="starburst-crystallization.mp4">
+        <h2><span class="title-hover" tabindex="0" aria-label="Starburst crystallization, lead exhibit (hover or focus to preview seed image starburst.png)">Starburst crystallization, lead exhibit <span class="seed-preview" role="tooltip"><img src="https://cdn.jsdelivr.net/gh/blackfirebitcoin/Open-Oasis-500M-GB10@dgx-spark-gb10/static/seeds/starburst.png" alt="Seed image for this clip: starburst.png" loading="lazy" width="320"><span class="seed-caption">Seed image: <code>starburst.png</code> (a non-Minecraft optical-illusion image)</span></span></span></h2>
         <p class="filename">starburst-crystallization.mp4</p>
         <video controls muted playsinline preload="metadata" width="640" src="https://cdn.jsdelivr.net/gh/blackfirebitcoin/Open-Oasis-500M-GB10@dgx-spark-gb10/benchmarks/renders/starburst-crystallization.mp4"></video>
         <p>Out-of-distribution starburst seed fed to the live server with normal WASD + mouse input. A reasonable failure mode would be the model producing chaotic-but-Minecraft-shaped block soup that at least drifts under input. Instead the model locks on the starburst and stays there. This is the cleanest single-clip demonstration of the architectural ceiling.</p>
