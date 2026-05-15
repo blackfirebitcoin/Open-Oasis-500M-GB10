@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Open Oasis Live — GB10</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: #0d1117; color: #e6edf3;
+      font: 14px/1.5 system-ui, -apple-system, sans-serif;
+      min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; padding: 20px;
+    }
+    h1 { font-size: 1.4rem; margin: 0 0 4px; }
+    .lede { color: #8b949e; margin-bottom: 16px; font-size: 0.92rem; text-align: center; }
+    .canvas-wrap {
+      position: relative; background: #000;
+      border: 1px solid #30363d; border-radius: 8px;
+      overflow: hidden; cursor: crosshair;
+    }
+    canvas { display: block; width: 640px; height: 360px; image-rendering: auto; }
+    .overlay {
+      position: absolute; top: 8px; left: 8px;
+      font: 600 11px/1.5 ui-monospace, Menlo, monospace;
+      background: rgba(0,0,0,0.65); color: #58a6ff;
+      padding: 6px 8px; border-radius: 6px;
+      white-space: pre; pointer-events: none; min-width: 180px;
+    }
+    .lock-overlay {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.35); color: #fff;
+      font-size: 1.1rem; font-weight: 600; cursor: pointer;
+      user-select: none;
+    }
+    .controls {
+      display: flex; gap: 12px; align-items: center;
+      margin: 14px 0 8px; flex-wrap: wrap; justify-content: center;
+    }
+    select, button {
+      background: #161b22; color: #e6edf3;
+      border: 1px solid #30363d; border-radius: 6px;
+      padding: 6px 10px; font: inherit;
+    }
+    button { cursor: pointer; }
+    button:hover { background: #1e242c; }
+    .help {
+      max-width: 640px; color: #8b949e; font-size: 0.9rem;
+      margin-top: 14px; padding: 12px 16px;
+      background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+    }
+    .help code {
+      background: rgba(110,118,129,.25); padding: 1px 5px;
+      border-radius: 4px; color: #e6edf3;
+    }
+    .status {
+      color: #8b949e; font: 600 11px/1.5 ui-monospace, monospace;
+    }
+    .status.error { color: #f85149; }
+    .status.connected { color: #3fb950; }
+  </style>
+</head>
+<body>
+  <h1>Open Oasis 500M — Live on GB10</h1>
+  <div class="lede">ddim_steps=4 · window=16 · safe camera + VAE re-encode (period=4) · 2-min stable demo</div>
+
+  <div class="controls">
+    <span class="status" id="status">connecting…</span>
+    <label>Seed: <select id="seed"></select></label>
+    <button id="reset">Reset (V)</button>
+  </div>
+
+  <div class="canvas-wrap" id="canvasWrap">
+    <canvas id="screen" width="640" height="360"></canvas>
+    <div class="overlay" id="overlay">waiting for first frame…</div>
+    <div class="lock-overlay" id="lockOverlay">Click to lock mouse · Esc to release</div>
+  </div>
+
+  <div class="help">
+    <b>Controls:</b> <code>WASD</code> move · <code>Space</code> jump · <code>Shift</code> sneak · <code>Ctrl</code> sprint · Mouse: look · LMB attack · RMB use · <code>V</code> reset scene<br>
+    Server enforces single client; opening a second tab will be rejected.<br>
+    Mouse deltas are EMA-smoothed (α=0.5) and clamped to ±0.3 in normalized camera space (Phase 0 finding).
+  </div>
+
+  <script>
+    const canvas = document.getElementById("screen");
+    const ctx = canvas.getContext("2d");
+    const overlay = document.getElementById("overlay");
+    const lockOverlay = document.getElementById("lockOverlay");
+    const seedSel = document.getElementById("seed");
+    const resetBtn = document.getElementById("reset");
+    const status = document.getElementById("status");
+
+    const wsUrl = (location.protocol === "https:" ? "wss" : "ws") + "://" + location.host + "/ws";
+    let ws = null;
+    let pendingDx = 0, pendingDy = 0;
+    let mouseDownButtons = new Set();
+    let pressedKeys = new Set();
+    let lastFrameRecv = 0;
+    const fpsWindow = [];
+
+    function setStatus(text, cls) {
+      status.textContent = text;
+      status.className = "status " + (cls || "");
+    }
+
+    async function loadSeeds() {
+      try {
+        const r = await fetch("/seeds");
+        const d = await r.json();
+        seedSel.innerHTML = "";
+        d.seeds.forEach(s => {
+          const o = document.createElement("option");
+          o.value = s; o.textContent = s;
+          if (s === d.default) o.selected = true;
+          seedSel.appendChild(o);
+        });
+      } catch (e) {
+        setStatus("seed list failed", "error");
+      }
+    }
+
+    function sendJson(obj) {
+      if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
+    }
+
+    function connect() {
+      ws = new WebSocket(wsUrl);
+      ws.binaryType = "arraybuffer";
+      ws.onopen = () => setStatus("connected, waiting for first frame…", "connected");
+      ws.onclose = () => setStatus("disconnected", "error");
+      ws.onerror = () => setStatus("websocket error", "error");
+      ws.onmessage = ev => {
+        if (typeof ev.data === "string") {
+          let m;
+          try { m = JSON.parse(ev.data); } catch { return; }
+          if (m.type === "ready") {
+            const safe = m.safe_camera ? ` · safe-camera period=${m.safe_camera_period} max=${m.safe_camera_max_px}px` : "";
+            setStatus(`connected · ddim=${m.ddim_steps} window=${m.window} clamp=±${m.camera_clamp}${safe}`, "connected");
+          } else if (m.type === "error") {
+            setStatus("server: " + m.message, "error");
+          } else if (m.type === "timing") {
+            const now = performance.now();
+            let recvFps = "—";
+            if (lastFrameRecv) {
+              const dt = (now - lastFrameRecv) / 1000;
+              fpsWindow.push(dt);
+              if (fpsWindow.length > 10) fpsWindow.shift();
+              const meanDt = fpsWindow.reduce((a,b)=>a+b,0) / fpsWindow.length;
+              recvFps = (1 / meanDt).toFixed(2);
+            }
+            lastFrameRecv = now;
+            overlay.textContent =
+              `frame ${m.frame}  fps_recv ${recvFps}  fps_srv ${m.fps}\n` +
+              `denoise ${m.denoise_ms.toFixed(0)}ms  decode ${m.decode_ms.toFixed(0)}ms\n` +
+              `jpeg ${m.jpeg_ms.toFixed(0)}ms  total ${m.total_ms.toFixed(0)}ms\n` +
+              `window ${m.window}  ddim ${m.ddim_steps}`;
+          } else if (m.type === "reset_done") {
+            setStatus(`reset to ${m.seed}`, "connected");
+            lastFrameRecv = 0; fpsWindow.length = 0;
+          }
+        } else {
+          const blob = new Blob([ev.data], { type: "image/jpeg" });
+          createImageBitmap(blob).then(img => {
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          }).catch(err => { console.error("decode error:", err); setStatus("decode error: " + err.message, "error"); });
+        }
+      };
+    }
+
+    function requestLock(){ canvas.requestPointerLock(); }
+    canvas.addEventListener("click", requestLock);
+    lockOverlay.addEventListener("click", requestLock);
+    document.addEventListener("pointerlockchange", () => {
+      if (document.pointerLockElement === canvas) {
+        lockOverlay.style.display = "none";
+      } else {
+        lockOverlay.style.display = "flex";
+      }
+    });
+    document.addEventListener("mousemove", e => {
+      if (document.pointerLockElement === canvas) {
+        pendingDx += e.movementX;
+        pendingDy += e.movementY;
+      }
+    });
+    canvas.addEventListener("mousedown", e => {
+      if (document.pointerLockElement !== canvas) return;
+      e.preventDefault();
+      mouseDownButtons.add(e.button);
+      sendJson({type: "button", button: e.button, down: true});
+    });
+    canvas.addEventListener("mouseup", e => {
+      if (document.pointerLockElement !== canvas) return;
+      e.preventDefault();
+      mouseDownButtons.delete(e.button);
+      sendJson({type: "button", button: e.button, down: false});
+    });
+    canvas.addEventListener("contextmenu", e => e.preventDefault());
+
+    document.addEventListener("keydown", e => {
+      if (e.code === "KeyV") {
+        e.preventDefault();
+        sendJson({type: "reset", seed: seedSel.value});
+        return;
+      }
+      if (document.pointerLockElement !== canvas) return;
+      const accepted = ["KeyW","KeyA","KeyS","KeyD","Space","ShiftLeft","ControlLeft"];
+      if (!accepted.includes(e.code)) return;
+      e.preventDefault();
+      if (pressedKeys.has(e.code)) return;
+      pressedKeys.add(e.code);
+      sendJson({type: "key", code: e.code, down: true});
+    });
+    document.addEventListener("keyup", e => {
+      const accepted = ["KeyW","KeyA","KeyS","KeyD","Space","ShiftLeft","ControlLeft"];
+      if (!accepted.includes(e.code)) return;
+      e.preventDefault();
+      pressedKeys.delete(e.code);
+      sendJson({type: "key", code: e.code, down: false});
+    });
+    window.addEventListener("blur", () => {
+      pressedKeys.clear();
+      mouseDownButtons.clear();
+      sendJson({type: "blur"});
+    });
+
+    setInterval(() => {
+      if (pendingDx !== 0 || pendingDy !== 0) {
+        sendJson({type: "mouse", dx: pendingDx, dy: pendingDy});
+        pendingDx = 0; pendingDy = 0;
+      }
+    }, 33);
+
+    resetBtn.addEventListener("click", () => sendJson({type: "reset", seed: seedSel.value}));
+    seedSel.addEventListener("change", () => sendJson({type: "reset", seed: seedSel.value}));
+
+    loadSeeds().then(connect);
+  </script>
+</body>
+</html>

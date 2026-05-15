@@ -92,7 +92,10 @@ def load_prompt(path, video_offset=None, n_prompt_frames=1):
         # add frame dimension
         prompt = rearrange(prompt, "c h w -> 1 c h w")
     elif path.lower().split(".")[-1] in VIDEO_EXTENSIONS:
+        # torchvision.read_video returns (T, H, W, C) uint8; permute to (T, C, H, W)
         prompt = read_video(path, pts_unit="sec")[0]
+        if prompt.ndim == 4 and prompt.shape[-1] == 3:
+            prompt = prompt.permute(0, 3, 1, 2).contiguous()
         if video_offset is not None:
             prompt = prompt[video_offset:]
         prompt = prompt[:n_prompt_frames]
